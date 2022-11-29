@@ -8,6 +8,12 @@ import com.user.control.repository.usuariosRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,12 +34,26 @@ public class usuariosController {
 
     //Guarda usuarios
     @PostMapping("/usuarios")
-    public usuarios guardarUsuario(@RequestBody usuarios usuarios) {
+    public usuarios guardarUsuario(@RequestBody usuarios usuarios, @RequestParam("file")MultipartFile imagen) {
+        if (!imagen.isEmpty()){
+            Path directorioImages = Paths.get("src//app//resource//status/images");
+            String rutaAbsoluta = directorioImages.toFile().getAbsolutePath();
+
+            try{
+                byte[] bytesImg = imagen.getBytes();
+                Path rutaCompleta = Paths.get(rutaAbsoluta + "//" + imagen.getOriginalFilename());
+                Files.write(rutaCompleta, bytesImg);
+
+                usuarios.setFoto(imagen.getOriginalFilename());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         return repository.save(usuarios);
     }
 
     //Eliminar usuarios
-    @DeleteMapping("/empleados/{id}")
+    @DeleteMapping("/usuarios/{id}")
     public ResponseEntity<Map<String, Boolean>> eliminarEmpleado(@PathVariable Long id) {
         usuarios usuario = repository.findById(id).orElseThrow(() -> new ResourceError("No existe el usuario:" + id));
 
@@ -43,11 +63,12 @@ public class usuariosController {
         return ResponseEntity.ok(respuesta);
     }
     //Actualizacion de usuarios
-    @PutMapping("/empleados/{id}")
+    @PutMapping("/usuarios/{id}")
     public ResponseEntity<usuarios> actualizarEmpleado(@PathVariable Long id, @RequestBody usuarios detallesUsuarios) {
         usuarios usuario = repository.findById(id)
                 .orElseThrow(() -> new ResourceError("No existe el usuario: " + id));
 
+        usuario.setFoto(detallesUsuarios.getFoto());
         usuario.setNombre(detallesUsuarios.getNombre());
         usuario.setEmail(detallesUsuarios.getEmail());
         usuario.setGender(detallesUsuarios.getGender());
